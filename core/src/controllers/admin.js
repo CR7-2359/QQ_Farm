@@ -18,6 +18,7 @@ const { addOrUpdateAccount, deleteAccount } = store;
 const { findAccountByRef, normalizeAccountRef, resolveAccountId } = require('../services/account-resolver');
 const { createModuleLogger } = require('../services/logger');
 const { MiniProgramLoginSession } = require('../services/qrlogin');
+const { createWechatQrLogin } = require('../services/wechat-qr-login');
 const { sendPushooMessage } = require('../services/push');
 const { getSchedulerRegistrySnapshot } = require('../services/scheduler');
 const { fetchProfileByCode } = require('../services/manual-login-profile');
@@ -36,6 +37,33 @@ let app = null;
 let server = null;
 let provider = null; // DataProvider
 let io = null;
+
+function publicAccounts(data) {
+    return {
+        ...data,
+        accounts: data.accounts.map((account) => {
+            if (!account.wechatQrIdentity) return account;
+            const { wechatQrIdentity, code, ...publicAccount } = account;
+            return { ...publicAccount, wechatQrBound: true };
+        }),
+    };
+}
+
+function validateWechatAccount(accountId, identity) {
+    const accounts = store.getAccounts().accounts;
+    if (accountId) {
+        const existing = accounts.find(account => account.id === accountId);
+        if (!existing || existing.platform !== 'wx' || !existing.wechatQrIdentity) {
+            return '此账号尚未绑定微信扫码，请使用原登录方式更新';
+        }
+        if (identity && existing.wechatQrIdentity !== identity) {
+            return '扫码的微信与原账号不一致';
+        }
+    } else if (identity && accounts.some(account => account.wechatQrIdentity === identity)) {
+        return '此微信账号已添加，请在原账号中使用扫码更新';
+    }
+    return '';
+}
 
 function emitRealtimeStatus(accountId, status) {
     if (!io) return;
@@ -764,7 +792,7 @@ function startAdminServer(dataProvider) {
     app.get('/api/accounts', (req, res) => {
         try {
             const data = provider.getAccounts();
-            res.json({ ok: true, data });
+            res.json({ ok: true, data: publicAccounts(data) });
         } catch (e) {
             res.status(500).json({ ok: false, error: e.message });
         }
@@ -794,7 +822,7 @@ function startAdminServer(dataProvider) {
             if (provider && provider.addAccountLog) {
                 provider.addAccountLog('update', `更新账号备注: ${remark}`, accountId, remark);
             }
-            res.json({ ok: true, data });
+            res.json({ ok: true, data: publicAccounts(data) });
         } catch (e) {
             res.status(500).json({ ok: false, error: e.message });
         }
@@ -806,6 +834,7 @@ function startAdminServer(dataProvider) {
             const isUpdate = !!body.id;
             const resolvedUpdateId = isUpdate ? resolveAccId(body.id) : '';
             const payload = isUpdate ? { ...body, id: resolvedUpdateId || String(body.id) } : { ...body };
+            delete payload.wechatQrIdentity;
             let wasRunning = false;
             let oldAccount = null;
             if (isUpdate && provider.isAccountRunning) {
@@ -829,6 +858,9 @@ function startAdminServer(dataProvider) {
 
             const incomingCode = String(payload.code || '').trim();
             const manualPlatform = String(payload.platform || (oldAccount && oldAccount.platform) || 'qq').trim().toLowerCase();
+            if (oldAccount?.wechatQrIdentity && (manualPlatform !== 'wx' || (incomingCode && incomingCode !== oldAccount.code))) {
+                payload.wechatQrIdentity = '';
+            }
             if (incomingCode && manualPlatform === 'qq') {
                 try {
                     const basicProfile = await fetchProfileByCode(incomingCode, {
@@ -877,7 +909,7 @@ function startAdminServer(dataProvider) {
                 // 如果是更新，且之前在运行，且不是仅修改备注，则重启
                 provider.restartAccount(payload.id);
             }
-            res.json({ ok: true, data });
+            res.json({ ok: true, data: publicAccounts(data) });
         } catch (e) {
             res.status(500).json({ ok: false, error: e.message });
         }
@@ -893,7 +925,7 @@ function startAdminServer(dataProvider) {
             if (provider.addAccountLog) {
                 provider.addAccountLog('delete', `删除账号: ${(target && target.name) || req.params.id}`, resolvedId, target ? target.name : '');
             }
-            res.json({ ok: true, data });
+            res.json({ ok: true, data: publicAccounts(data) });
         } catch (e) {
             res.status(500).json({ ok: false, error: e.message });
         }
@@ -955,6 +987,66 @@ function startAdminServer(dataProvider) {
         } catch (e) {
             handleApiError(res, e);
         }
+    });
+
+    const wechatQr = createWechatQrLogin({
+        url: process.env.WECHAT_QR_URL,
+        token: process.env.WECHAT_QR_TOKEN,
+        validateAccount: validateWechatAccount,
+        saveAccount({ accountId, identity, code, name }) {
+            const conflict = validateWechatAccount(accountId, identity);
+            if (conflict) return conflict;
+
+            const data = addOrUpdateAccount({
+                id: accountId || undefined,
+                name: accountId ? undefined : name,
+                platform: 'wx',
+                code,
+                wechatQrIdentity: identity,
+            });
+            const account = accountId
+                ? data.accounts.find(item => item.id === accountId)
+                : data.accounts[data.accounts.length - 1];
+            try {
+                provider.addAccountLog?.(accountId ? 'update' : 'add', `微信扫码: ${account.name}`, account.id, account.name);
+                if (provider.isAccountRunning?.(account.id)) provider.restartAccount(account.id);
+                else provider.startAccount(account.id);
+            } catch {
+                adminLogger.warn('微信扫码账号已保存，启动失败', { accountId: account.id });
+            }
+            return '';
+        },
+    });
+
+    app.use('/api/qr/wechat', (req, res, next) => {
+        if (!req.adminToken) {
+            return res.status(403).json({ ok: false, error: '微信扫码需要启用面板密码认证并登录' });
+        }
+        res.set('Cache-Control', 'no-store');
+        next();
+    });
+
+    app.post('/api/qr/wechat/create', async (req, res) => {
+        const { accountId, name } = req.body || {};
+        try {
+            const data = await wechatQr.create(req.adminToken, {
+                accountId: typeof accountId === 'string' ? accountId.trim() : '',
+                name: typeof name === 'string' ? name.trim().slice(0, 80) : '',
+            });
+            res.json({ ok: true, data });
+        } catch (error) {
+            res.json({ ok: false, error: error.message });
+        }
+    });
+
+    app.post('/api/qr/wechat/check', async (req, res) => {
+        const data = await wechatQr.check(req.adminToken, req.body?.id);
+        res.json({ ok: true, data });
+    });
+
+    app.post('/api/qr/wechat/cancel', async (req, res) => {
+        await wechatQr.cancel(req.adminToken, req.body?.id);
+        res.json({ ok: true });
     });
 
     // ============ QR Code Login APIs (无需账号选择) ============
