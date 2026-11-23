@@ -86,6 +86,8 @@ $env:ADMIN_PASSWORD="你的强密码"
 pnpm dev:core
 ```
 
+安装依赖并构建前端后，可以将根目录的 `.env.example` 复制为 `.env`，填写面板密码和微信扫码服务配置。以后双击 `start.cmd` 即可启动面板。
+
 ### Linux（Ubuntu/Debian）
 
 ```bash
