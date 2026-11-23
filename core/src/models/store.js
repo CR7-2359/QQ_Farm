@@ -1002,6 +1002,7 @@ function addOrUpdateAccount(acc) {
             platform: acc.platform || 'qq',
             gid: acc.gid ? String(acc.gid) : '',
             openId: acc.openId ? String(acc.openId) : '',
+            ...(acc.wechatQrIdentity ? { wechatQrIdentity: acc.wechatQrIdentity } : {}),
             uin: acc.uin ? String(acc.uin) : '',
             qq: acc.qq ? String(acc.qq) : (acc.uin ? String(acc.uin) : ''),
             avatar: acc.avatar || acc.avatarUrl || '',

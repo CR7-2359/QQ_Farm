@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import api from '@/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -14,11 +14,17 @@ const props = defineProps<{
 
 const emit = defineEmits(['close', 'saved'])
 
-const activeTab = ref('qr') // qr, manual
+const activeTab = ref<'qr' | 'wechat' | 'manual'>('qr')
 const loading = ref(false)
 const qrData = ref<{ image?: string, code: string, qrcode?: string, url?: string } | null>(null)
 const qrStatus = ref('')
 const errorMessage = ref('')
+const wechatQr = ref<{ id: string, image: string } | null>(null)
+const wechatLoading = ref(false)
+const wechatStatus = ref('')
+let qqRequest = 0
+let wechatRequest = 0
+let checkingWechatId = ''
 
 const form = reactive({
   name: '',
@@ -27,15 +33,19 @@ const form = reactive({
 })
 
 const { pause: stopQRCheck, resume: startQRCheck } = useIntervalFn(async () => {
-  if (!qrData.value)
+  const current = qrData.value
+  if (!current)
     return
   try {
-    const res = await api.post('/api/qr/check', { code: qrData.value.code })
+    const res = await api.post('/api/qr/check', { code: current.code })
+    if (activeTab.value !== 'qr' || current !== qrData.value || !props.show)
+      return
     if (res.data.ok) {
       const status = res.data.data.status
       if (status === 'OK') {
         // Login success
         stopQRCheck()
+        qrData.value = null
         qrStatus.value = '登录成功'
         // Auto fill form and submit
         const { uin, code: authCode, nickname } = res.data.data
@@ -79,10 +89,15 @@ async function loadQRCode() {
   if (activeTab.value !== 'qr')
     return
   loading.value = true
+  const request = ++qqRequest
+  stopQRCheck()
+  qrData.value = null
   qrStatus.value = '正在获取二维码'
   errorMessage.value = ''
   try {
     const res = await api.post('/api/qr/create')
+    if (request !== qqRequest)
+      return
     if (res.data.ok) {
       qrData.value = res.data.data
       qrStatus.value = '请使用手机QQ扫码'
@@ -93,12 +108,119 @@ async function loadQRCode() {
     }
   }
   catch (e) {
-    qrStatus.value = '获取失败'
+    if (request === qqRequest)
+      qrStatus.value = '获取失败'
     console.error(e)
   }
   finally {
-    loading.value = false
+    if (request === qqRequest)
+      loading.value = false
   }
+}
+
+function cancelWechatSession(id: string) {
+  void api.post('/api/qr/wechat/cancel', { id }).catch(() => {})
+}
+
+const { pause: stopWechatCheck, resume: startWechatCheck } = useIntervalFn(async () => {
+  const id = wechatQr.value?.id
+  if (!id || checkingWechatId === id)
+    return
+
+  checkingWechatId = id
+  try {
+    const { data } = await api.post('/api/qr/wechat/check', { id }, { timeout: 60000 })
+    if (wechatQr.value?.id !== id)
+      return
+    const status = data.data?.status
+    if (status === 'scanned') {
+      wechatStatus.value = '已扫码，请在手机微信中确认'
+    }
+    else if (status === 'pending') {
+      wechatStatus.value = '请使用手机微信扫码'
+    }
+    else if (status === 'retrying') {
+      wechatStatus.value = '扫码状态暂时无法查询，正在重试'
+    }
+    else if (status === 'complete') {
+      wechatQr.value = null
+      emit('saved')
+      close()
+    }
+    else {
+      wechatQr.value = null
+      stopWechatCheck()
+      wechatStatus.value = data.data?.error || data.error || '二维码已失效，请刷新后重试'
+    }
+  }
+  catch (error: any) {
+    if (wechatQr.value?.id === id) {
+      clearWechatQRCode()
+      wechatStatus.value = error.response?.data?.error || '微信扫码状态查询失败，请刷新后重试'
+    }
+  }
+  finally {
+    if (checkingWechatId === id)
+      checkingWechatId = ''
+  }
+}, 2000, { immediate: false })
+
+function clearWechatQRCode() {
+  wechatRequest++
+  stopWechatCheck()
+  if (wechatQr.value)
+    cancelWechatSession(wechatQr.value.id)
+  wechatQr.value = null
+  wechatLoading.value = false
+}
+
+async function loadWechatQRCode() {
+  clearWechatQRCode()
+  const request = wechatRequest
+  wechatLoading.value = true
+  wechatStatus.value = '正在获取微信二维码'
+  try {
+    const { data } = await api.post('/api/qr/wechat/create', {
+      accountId: props.editData?.id,
+      name: form.name,
+    }, { timeout: 25000 })
+    if (request !== wechatRequest) {
+      if (data.ok)
+        cancelWechatSession(data.data.id)
+      return
+    }
+    if (data.ok) {
+      wechatQr.value = data.data
+      wechatStatus.value = '请使用手机微信扫码'
+      startWechatCheck()
+    }
+    else {
+      wechatStatus.value = data.error || '获取微信二维码失败'
+    }
+  }
+  catch (error: any) {
+    if (request === wechatRequest)
+      wechatStatus.value = error.response?.data?.error || '获取微信二维码失败，请重试'
+  }
+  finally {
+    if (request === wechatRequest)
+      wechatLoading.value = false
+  }
+}
+
+function selectTab(tab: typeof activeTab.value) {
+  if (activeTab.value === 'qr')
+    loading.value = false
+  qqRequest++
+  stopQRCheck()
+  qrData.value = null
+  clearWechatQRCode()
+  errorMessage.value = ''
+  activeTab.value = tab
+  if (tab === 'qr')
+    void loadQRCode()
+  else if (tab === 'wechat')
+    void loadWechatQRCode()
 }
 
 const isMobile = computed(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent))
@@ -154,6 +276,10 @@ async function addAccount(data: any) {
 
 async function submitManual() {
   errorMessage.value = ''
+  if (props.editData?.wechatQrBound && !form.code && form.name.trim() && form.name !== props.editData.name) {
+    await addAccount({ id: props.editData.id, name: form.name.trim() })
+    return
+  }
   if (!form.code) {
     errorMessage.value = '请输入Code 或 进行扫码'
     return
@@ -212,33 +338,37 @@ async function submitManual() {
 }
 
 function close() {
+  qqRequest++
   stopQRCheck()
+  clearWechatQRCode()
   emit('close')
 }
+
+onBeforeUnmount(clearWechatQRCode)
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
     errorMessage.value = ''
     if (props.editData) {
-      // Edit mode: Default to QR refresh, load code
-      activeTab.value = 'qr'
       form.name = props.editData.name
       form.code = props.editData.code || ''
       form.platform = props.editData.platform || 'qq'
-      loadQRCode()
+      selectTab(form.platform === 'wx' ? (props.editData.wechatQrBound ? 'wechat' : 'manual') : 'qr')
     }
     else {
       // Add mode: Default to QR
-      activeTab.value = 'qr'
       form.name = ''
       form.code = ''
       form.platform = 'qq'
-      loadQRCode()
+      selectTab('qr')
     }
   }
   else {
     // Reset when closed
+    qqRequest++
     stopQRCheck()
+    clearWechatQRCode()
+    loading.value = false
     qrData.value = null
     qrStatus.value = ''
   }
@@ -264,16 +394,25 @@ watch(() => props.show, (newVal) => {
         <!-- Tabs -->
         <div class="mb-4 flex border-b border-gray-200 dark:border-gray-700">
           <button
+            v-if="!editData?.wechatQrBound"
             class="flex-1 py-2 text-center font-medium"
             :class="activeTab === 'qr' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'"
-            @click="activeTab = 'qr'; loadQRCode()"
+            @click="selectTab('qr')"
           >
-            {{ editData ? '扫码更新' : '扫码登录' }}
+            QQ扫码
+          </button>
+          <button
+            v-if="!editData || editData.platform === 'wx'"
+            class="flex-1 py-2 text-center font-medium"
+            :class="activeTab === 'wechat' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'"
+            @click="selectTab('wechat')"
+          >
+            微信扫码
           </button>
           <button
             class="flex-1 py-2 text-center font-medium"
             :class="activeTab === 'manual' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'"
-            @click="activeTab = 'manual'; stopQRCheck()"
+            @click="selectTab('manual')"
           >
             手动填码
           </button>
@@ -311,6 +450,18 @@ watch(() => props.show, (newVal) => {
               跳转QQ登录
             </BaseButton>
           </div>
+        </div>
+
+        <div v-if="activeTab === 'wechat'" class="flex flex-col items-center justify-center py-4 space-y-4">
+          <div v-if="wechatQr" class="border rounded bg-white p-2">
+            <img :src="wechatQr.image" alt="微信登录二维码" class="h-48 w-48">
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400" role="status">
+            {{ wechatStatus }}
+          </p>
+          <BaseButton variant="text" size="sm" :loading="wechatLoading" @click="loadWechatQRCode">
+            刷新二维码
+          </BaseButton>
         </div>
 
         <!-- Manual Tab -->

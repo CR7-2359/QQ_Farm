@@ -111,6 +111,20 @@ ADMIN_PASSWORD='你的强密码' pnpm dev:core
 - 本机：`http://localhost:3000`
 - 局域网：`http://<你的IP>:3000`
 
+### 微信扫码添加账号
+
+在同一台电脑运行 [YYB Go Enhanced](https://github.com/525815266/YYB-Go-Enhanced/blob/v0.3.11/docs/docker-deployment.md)（已验证版本 `0.3.11`），只向本机开放服务端口，并在扫码服务中设置 `YYB_PROTOCOL_TOKEN`。在启动 QQ 农场面板前配置下列环境变量：
+
+```powershell
+$env:WECHAT_QR_URL = 'http://127.0.0.1:18427' # 改用本机扫码服务的实际端口
+$env:WECHAT_QR_TOKEN = '<扫码服务的 YYB_PROTOCOL_TOKEN>'
+pnpm dev:core
+```
+
+启用面板密码认证并登录，打开「账号管理 → 添加账号 → 微信扫码」，用手机微信扫码并确认。已通过微信扫码添加的账号可在编辑弹窗中用原微信重新授权。手动添加的微信账号继续使用手动填码更新。
+
+如果游戏服务器提示客户端版本过低，在「设置」的运行时客户端配置中更新版本。`1.17.0.4_20261117` 已于 2026-11-23 通过微信登录验证。扫码服务令牌只需配置在服务端环境变量中。
+
 ---
 
 ## Docker 部署
