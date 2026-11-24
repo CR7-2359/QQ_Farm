@@ -1,10 +1,26 @@
-# QQ Farm · QQ 农场多账号管理面板
+<p align="center">
+  <img src="web/public/icon.png" alt="QQ Farm 项目图标" width="64">
+</p>
 
-<img src="web/public/icon.png" alt="QQ Farm 项目图标" width="64">
+<h1 align="center">QQ Farm · QQ 农场多账号管理面板</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-236b3f" alt="Node.js">
+  <img src="https://img.shields.io/badge/Express-236b3f" alt="Express">
+  <img src="https://img.shields.io/badge/Socket.IO-236b3f" alt="Socket.IO">
+  <img src="https://img.shields.io/badge/Protobuf-236b3f" alt="Protobuf">
+  <img src="https://img.shields.io/badge/Vue%203-245fa4" alt="Vue 3">
+  <img src="https://img.shields.io/badge/TypeScript-245fa4" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-245fa4" alt="Vite">
+  <img src="https://img.shields.io/badge/Pinia-245fa4" alt="Pinia">
+  <img src="https://img.shields.io/badge/UnoCSS-245fa4" alt="UnoCSS">
+  <img src="https://img.shields.io/badge/Docker%20Compose-584986" alt="Docker Compose">
+  <img src="https://img.shields.io/badge/pnpm-584986" alt="pnpm">
+  <img src="https://img.shields.io/badge/GitHub%20Actions-584986" alt="GitHub Actions">
+</p>
 
 QQ Farm 是一个可自部署的 QQ 农场自动化工具。通过浏览器集中添加和管理 QQ、微信农场账号，为每个账号配置巡查和种植策略，并查看运行状态、实时日志和作物收益数据。
 
-- [技术栈](#技术栈)
 - [功能一览](#功能一览)
 - [Windows 快速开始](#windows-快速开始)
 - [添加和管理账号](#添加和管理账号)
@@ -13,14 +29,6 @@ QQ Farm 是一个可自部署的 QQ 农场自动化工具。通过浏览器集�
 - [常见问题](#常见问题)
 - [本地开发](#本地开发)
 - [来源与许可证](#来源与许可证)
-
-## 技术栈
-
-**后端** `Node.js` `Express` `Socket.IO` `Protobuf`
-
-**前端** `Vue 3` `TypeScript` `Vite` `Pinia` `UnoCSS`
-
-**部署** `Docker Compose` `pnpm` `GitHub Actions`
 
 ## 功能一览
 
