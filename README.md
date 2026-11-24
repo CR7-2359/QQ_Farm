@@ -4,6 +4,7 @@
 
 QQ Farm 是一个可自部署的 QQ 农场自动化工具。通过浏览器集中添加和管理 QQ、微信农场账号，为每个账号配置巡查和种植策略，并查看运行状态、实时日志和作物收益数据。
 
+- [技术栈](#技术栈)
 - [功能一览](#功能一览)
 - [Windows 快速开始](#windows-快速开始)
 - [添加和管理账号](#添加和管理账号)
@@ -12,6 +13,14 @@ QQ Farm 是一个可自部署的 QQ 农场自动化工具。通过浏览器集�
 - [常见问题](#常见问题)
 - [本地开发](#本地开发)
 - [来源与许可证](#来源与许可证)
+
+## 技术栈
+
+**后端** `Node.js` `Express` `Socket.IO` `Protobuf`
+
+**前端** `Vue 3` `TypeScript` `Vite` `Pinia` `UnoCSS`
+
+**部署** `Docker Compose` `pnpm` `GitHub Actions`
 
 ## 功能一览
 
@@ -215,7 +224,7 @@ QQ_Farm/
 └── start.cmd             # Windows 启动器
 ```
 
-后端使用 Node.js、Express、Socket.IO 和 Protobuf。前端使用 Vue 3、TypeScript、Vite、Pinia 和 UnoCSS。提交与验证约定见 [AGENTS.md](AGENTS.md)。
+提交与验证约定见 [AGENTS.md](AGENTS.md)。
 
 ## 来源与许可证
 
