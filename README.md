@@ -1,6 +1,6 @@
 # QQ Farm · QQ 农场多账号管理面板
 
-![QQ Farm 项目图标](web/public/icon.png)
+<img src="web/public/icon.png" alt="QQ Farm 项目图标" width="64">
 
 QQ Farm 是一个可自部署的 QQ 农场自动化工具。通过浏览器集中添加和管理 QQ、微信农场账号，为每个账号配置巡查和种植策略，并查看运行状态、实时日志和作物收益数据。
 
