@@ -1,244 +1,226 @@
-# QQ 农场多账号挂机 + Web 面板
+# QQ Farm · QQ 农场多账号管理面板
 
-基于 Node.js 的 QQ 农场自动化工具，支持多账号管理、Web 控制面板、实时日志与数据分析。
+![QQ Farm 项目图标](web/public/icon.png)
 
-[Discord](https://discord.gg/zTEhed5qpc)
+QQ Farm 是一个可自部署的 QQ 农场自动化工具。通过浏览器集中添加和管理 QQ、微信农场账号，为每个账号配置巡查和种植策略，并查看运行状态、实时日志和作物收益数据。
 
-## 技术栈
+- [功能一览](#功能一览)
+- [Windows 快速开始](#windows-快速开始)
+- [添加和管理账号](#添加和管理账号)
+- [其他部署方式](#其他部署方式)
+- [配置与数据](#配置与数据)
+- [常见问题](#常见问题)
+- [本地开发](#本地开发)
+- [来源与许可证](#来源与许可证)
 
-**后端**
+## 功能一览
 
-[<img src="https://skillicons.dev/icons?i=nodejs" height="48" title="Node.js 20+" />](https://nodejs.org/)
-[<img src="https://skillicons.dev/icons?i=express" height="48" title="Express 4" />](https://expressjs.com/)
-[<img src="https://skillicons.dev/icons?i=socketio" height="48" title="Socket.io 4" />](https://socket.io/)
+| 功能 | 在面板中可以做什么 |
+| --- | --- |
+| 多账号管理 | 添加、编辑、启动、停止和删除账号，查看各账号的在线状态 |
+| 农场自动化 | 配置巡查间隔、种子策略和自动操作，包括收获、种植、浇水、除草、除虫、土地升级与出售果实 |
+| 好友操作 | 开启偷菜、帮忙或捣乱，使用黑名单跳过指定好友，在静默时段暂停好友巡查 |
+| 任务与奖励 | 自动检查任务并领取奖励，也可开启邮件奖励领取 |
+| 实时日志 | 在「概览」查看运行日志，按账号、模块、事件、级别或关键词筛选 |
+| 作物分析 | 按经验效率、净利润效率和等级要求对比作物，也可查看使用普通肥料时的效率 |
+| 离线通知 | 为账号离线配置 Bark 或自定义 Webhook 等通知渠道，并在设置中发送测试通知 |
 
-**前端**
+「个人」页面包含「我的农场」和「我的背包」。在「设置」中可以调整自动化规则，面板支持浅色与深色主题。
 
-[<img src="https://skillicons.dev/icons?i=vue" height="48" title="Vue 3" />](https://vuejs.org/)
-[<img src="https://skillicons.dev/icons?i=vite" height="48" title="Vite 7" />](https://vitejs.dev/)
-[<img src="https://skillicons.dev/icons?i=ts" height="48" title="TypeScript 5" />](https://www.typescriptlang.org/)
-[<img src="https://cdn.simpleicons.org/pinia/FFD859" height="48" title="Pinia 3" />](https://pinia.vuejs.org/)
-[<img src="https://skillicons.dev/icons?i=unocss" height="48" title="UnoCSS" />](https://unocss.dev/)
+## Windows 快速开始
 
-**部署**
-
-[<img src="https://skillicons.dev/icons?i=docker" height="48" title="Docker Compose" />](https://docs.docker.com/compose/)
-[<img src="https://skillicons.dev/icons?i=pnpm" height="48" title="pnpm 10" />](https://pnpm.io/)
-[<img src="https://skillicons.dev/icons?i=githubactions" height="48" title="GitHub Actions" />](https://github.com/features/actions)
-
----
-
-## 功能特性
-
-### 多账号管理
-- 账号新增、编辑、删除、启动、停止
-- 手动输入 Code
-- 账号被踢下线自动删除
-- 账号连续离线超时自动删除
-- 账号离线推送通知（支持 Bark、自定义 Webhook 等）
-
-### 自动化能力
-- 农场：收获、种植、浇水、除草、除虫、铲除、土地升级
-- 仓库：收获后自动出售果实
-- 好友：自动偷菜 / 帮忙 / 捣乱
-- 任务：自动检查并领取
-- 好友黑名单：跳过指定好友
-- 静默时段：指定时间段内不执行好友操作
-
-### Web 面板
-- 概览 / 农场 / 背包 / 好友 / 分析 / 账号 / 设置页面
-- 实时日志，支持按账号、模块、事件、级别、关键词、时间范围筛选
-- 深色 / 浅色主题切换
-
-### 分析页
-支持按以下维度排序作物：
-- 经验效率 / 普通肥经验效率
-- 净利润效率 / 普通肥净利润效率
-- 等级要求
-
----
-
-## 环境要求
-
-- 源码运行：Node.js 20+，pnpm（推荐通过 `corepack enable` 启用）
-- 二进制发布版：无需安装 Node.js
-
-## 安装与启动（源码方式）
-
-### Windows
+准备 Git、Node.js 20.19+（20.x）或 22.12+，以及 pnpm 10.30.2。可以使用 Corepack 启用 pnpm。若安装的 Node.js 没有提供 Corepack，也可以通过 npm 安装固定版本。
 
 ```powershell
-# 1. 安装 Node.js 20+（https://nodejs.org/）并启用 pnpm
-node -v
-corepack enable
-pnpm -v
-
-# 2. 安装依赖并构建前端
-cd D:\Projects\qq-farm-bot-ui
-pnpm install
-pnpm build:web
-
-# 3. 启动
-pnpm dev:core
-
-# （可选）设置管理密码后启动
-$env:ADMIN_PASSWORD="你的强密码"
-pnpm dev:core
-```
-
-安装依赖并构建前端后，可以将根目录的 `.env.example` 复制为 `.env`，填写面板密码和微信扫码服务配置。以后双击 `start.cmd` 即可启动面板。
-
-### Linux（Ubuntu/Debian）
-
-```bash
-# 1. 安装 Node.js 20+
-sudo apt update && sudo apt install -y curl
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+# 有 Corepack 时启用 pnpm
 corepack enable
 
-# 2. 安装依赖并构建前端
-cd /path/to/qq-farm-bot-ui
-pnpm install
+# 没有 Corepack 时使用这一行
+# npm install --global pnpm@10.30.2
+
+git clone https://github.com/CR7-2359/QQ_Farm.git
+Set-Location QQ_Farm
+node --version
+pnpm --version
+pnpm install --frozen-lockfile
 pnpm build:web
-
-# 3. 启动
-pnpm dev:core
-
-# （可选）设置管理密码后启动
-ADMIN_PASSWORD='你的强密码' pnpm dev:core
 ```
 
-启动后访问面板：
-- 本机：`http://localhost:3000`
-- 局域网：`http://<你的IP>:3000`
-
-### 微信扫码添加账号
-
-在同一台电脑运行 [YYB Go Enhanced](https://github.com/525815266/YYB-Go-Enhanced/blob/v0.3.11/docs/docker-deployment.md)（已验证版本 `0.3.11`），只向本机开放服务端口，并在扫码服务中设置 `YYB_PROTOCOL_TOKEN`。在启动 QQ 农场面板前配置下列环境变量：
+首次启动时，在仓库根目录创建本机配置并打开它。
 
 ```powershell
-$env:WECHAT_QR_URL = 'http://127.0.0.1:18427' # 改用本机扫码服务的实际端口
-$env:WECHAT_QR_TOKEN = '<扫码服务的 YYB_PROTOCOL_TOKEN>'
-pnpm dev:core
+Copy-Item .env.example .env
+notepad .env
 ```
 
-启用面板密码认证并登录，打开「账号管理 → 添加账号 → 微信扫码」，用手机微信扫码并确认。已通过微信扫码添加的账号可在编辑弹窗中用原微信重新授权。手动添加的微信账号继续使用手动填码更新。
+将 `ADMIN_PASSWORD=` 改成你自己的强密码并保存。计划使用微信扫码时，再填写扫码服务地址和令牌。已有 `.env` 时直接编辑它。
 
-如果游戏服务器提示客户端版本过低，在「设置」的运行时客户端配置中更新版本。`1.17.0.4_20261117` 已于 2026-11-23 通过微信登录验证。扫码服务令牌只需配置在服务端环境变量中。
+```powershell
+.\start.cmd
+```
 
----
+启动后打开 <http://localhost:3000>，用刚设置的面板密码登录。以后也可以双击 [start.cmd](start.cmd) 启动。终端运行时按 `Ctrl+C` 停止服务。
 
-## Docker 部署
+## 添加和管理账号
+
+面板密码用于进入管理后台。登录后，从左侧「账号」进入「账号管理」，点击「添加账号」为该账号授权。
+
+| 添加方式 | 操作 |
+| --- | --- |
+| QQ 扫码 | 选择「QQ扫码」，用手机 QQ 扫码并确认 |
+| 微信扫码 | 按下节配置本机微信扫码服务，再选择「微信扫码」，用手机微信扫码并确认 |
+| 手动填码 | 选择「手动填码」，选择对应平台并填写该账号的农场登录 Code |
+
+添加后可在「账号管理」查看状态和启动或停止账号。建议先确认一个账号能正常连接，再在「设置」为它保存自动化规则，通过「概览」查看执行日志。服务启动时会尝试启动已保存的账号。被踢下线时，程序会停止该账号。在「设置」中还可以开启离线删号并指定时限。
+
+### 微信扫码配置
+
+1. 在运行面板的同一台电脑启动 YYB Go Enhanced，并在该服务设置 `YYB_PROTOCOL_TOKEN`。可以参考项目曾验证的 `v0.3.11` 部署文档，将扫码服务端口限制在本机访问。[YYB Go Enhanced 部署文档](https://github.com/525815266/YYB-Go-Enhanced/blob/v0.3.11/docs/docker-deployment.md)
+2. 使用 Windows 启动器时，在 `.env` 中设置以下变量并重启面板。Linux 源码和二进制运行方式可以在启动前将相同变量设为进程环境变量。
+
+   ```dotenv
+   WECHAT_QR_URL=http://127.0.0.1:18427
+   WECHAT_QR_TOKEN=<替换为扫码服务的 YYB_PROTOCOL_TOKEN>
+   ```
+
+3. 保持面板密码认证开启，登录后进入「账号管理 → 添加账号 → 微信扫码」。按手机提示完成授权。
+4. 已绑定的微信账号需要续期时，在「编辑账号 → 微信扫码」用原微信重新授权。手动填码添加的微信账号在「手动填码」中更新 Code。
+
+## 其他部署方式
+
+### Linux 源码运行
+
+准备与 Windows 相同版本要求的 Node.js 和 pnpm。已克隆仓库时，直接在仓库根目录安装并运行。
 
 ```bash
-# 构建并后台启动
+git clone https://github.com/CR7-2359/QQ_Farm.git
+cd QQ_Farm
+pnpm install --frozen-lockfile
+pnpm build:web
+
+ADMIN_PASSWORD='替换为自己的强密码' pnpm dev:core
+```
+
+默认访问 <http://localhost:3000>。需要加载根目录的 `.env` 时，可以在仓库根目录执行 `node --env-file=.env core/client.js`，所用配置与 Windows 启动器一致。
+
+### Docker Compose 部署
+
+从仓库根目录部署。先将 [docker-compose.yml](docker-compose.yml) 中的 `ADMIN_PASSWORD: admin` 改为自定义强密码。只需要宿主机访问时，可将端口映射设为 `127.0.0.1:3000:3000`。
+
+```bash
+docker compose config --quiet
 docker compose up -d --build
-
-# 查看日志
 docker compose logs -f
-
-# 停止并移除容器
-docker compose down
 ```
 
-### 数据持久化
+默认从宿主机访问 <http://localhost:3000>。按 `Ctrl+C` 退出日志跟踪，容器继续运行。执行 `docker compose down` 停止并移除容器，宿主机的 `./data` 可在下次启动时继续使用。
 
-`docker-compose.yml` 已将数据目录挂载：
+Compose 中通过 `environment` 为面板容器传递配置。微信扫码服务需要能从面板进程的回环地址访问。使用宿主机上的扫码服务时，可以选择源码或二进制方式运行面板。
 
-| 宿主机路径 | 容器内路径 |
-|-----------|-----------|
-| `./data`  | `/app/core/data` |
+### 二进制打包与运行
 
-账号与配置数据保存在 `./data/accounts.json` 和 `./data/store.json`。
+有对应平台的发布资产时，可直接下载并运行。也可以安装源码依赖后自行打包。二进制运行时无需安装 Node.js。[GitHub Releases](https://github.com/CR7-2359/QQ_Farm/releases)
 
-### 设置管理密码
+| 目标平台 | 仓库根目录打包命令 | `core/dist/` 下的文件 |
+| --- | --- | --- |
+| Windows x64 | `pnpm package:win` | `qq-farm-bot-win-x64.exe` |
+| Linux x64 | `pnpm package:linux` | `qq-farm-bot-linux-x64` |
+| macOS Intel | `pnpm package:mac` | `qq-farm-bot-macos-x64` |
+| macOS Apple Silicon | `pnpm package:mac` | `qq-farm-bot-macos-arm64` |
 
-在 `docker-compose.yml` 的 `environment` 中配置：
+`pnpm package:release` 一次构建全部目标，仓库的发布工作流在 Ubuntu 上执行这个命令。
 
-```yaml
-environment:
-  ADMIN_PASSWORD: 你的强密码
-```
+Windows 下在可执行文件所在目录打开 PowerShell，设置面板密码后运行。
 
-修改后执行 `docker compose up -d` 重启生效。
-
----
-
-## 二进制发布版（无需 Node.js）
-
-### 构建
-
-```bash
-pnpm install
-pnpm package:release
-```
-
-产物输出在 `dist/` 目录：
-
-| 平台 | 文件名 |
-|------|--------|
-| Windows x64 | `qq-farm-bot-win-x64.exe` |
-| Linux x64 | `qq-farm-bot-linux-x64` |
-| macOS Intel | `qq-farm-bot-macos-x64` |
-| macOS Apple Silicon | `qq-farm-bot-macos-arm64` |
-
-### 运行
-
-```bash
-# Windows：双击 exe 或在终端执行
+```powershell
+$env:ADMIN_PASSWORD = '替换为自己的强密码'
 .\qq-farm-bot-win-x64.exe
-
-# Linux / macOS
-chmod +x ./qq-farm-bot-linux-x64 && ./qq-farm-bot-linux-x64
 ```
 
-程序会在可执行文件同级目录自动创建 `data/` 并写入 `store.json`、`accounts.json`。
+Linux 下在可执行文件所在目录执行以下命令。macOS 将文件名替换为对应架构的产物。
 
----
-
-## 登录与安全
-
-- 面板首次访问需要登录
-- 默认管理密码：`admin`
-- **建议部署后立即修改为强密码**
-
----
-
-## 项目结构
-
-```
-qq-farm-bot-ui/
-├── core/                  # 后端（Node.js 机器人引擎）
-│   ├── src/
-│   │   ├── config/        # 配置管理
-│   │   ├── controllers/   # HTTP API
-│   │   ├── gameConfig/    # 游戏静态数据
-│   │   ├── models/        # 数据模型与持久化
-│   │   ├── proto/         # Protobuf 协议定义
-│   │   ├── runtime/       # 运行时引擎与 Worker 管理
-│   │   └── services/      # 业务逻辑（农场、好友、任务等）
-│   ├── data/              # 运行时数据（accounts.json、store.json）
-│   └── client.js          # 主进程入口
-├── web/                   # 前端（Vue 3 + Vite）
-│   ├── src/
-│   │   ├── api/           # API 客户端
-│   │   ├── components/    # Vue 组件
-│   │   ├── stores/        # Pinia 状态管理
-│   │   └── views/         # 页面视图
-│   └── dist/              # 构建产物
-├── docker-compose.yml
-├── pnpm-workspace.yaml
-└── package.json
+```bash
+chmod +x ./qq-farm-bot-linux-x64
+ADMIN_PASSWORD='替换为自己的强密码' ./qq-farm-bot-linux-x64
 ```
 
----
+## 配置与数据
 
-## 特别感谢
+### 环境变量
 
-- 核心功能：[linguo2625469/qq-farm-bot](https://github.com/linguo2625469/qq-farm-bot)
-- 部分功能：[QianChenJun/qq-farm-bot](https://github.com/QianChenJun/qq-farm-bot)
+| 变量 | 默认值 | 用途 |
+| --- | --- | --- |
+| `ADMIN_PASSWORD` | `admin` | 首次启动时的面板密码。建议在首次启动前设置，避免使用默认密码 |
+| `ADMIN_PORT` | `3000` | 面板监听端口。改动后应同步修改访问地址，Docker 部署还要调整容器端口映射 |
+| `WECHAT_QR_URL` | 空 | 微信扫码服务的本机地址。模板示例为 `http://127.0.0.1:18427`，按实际端口填写 |
+| `WECHAT_QR_TOKEN` | 空 | 微信扫码服务的 `YYB_PROTOCOL_TOKEN` |
+| `LOG_LEVEL` | `info` | 后端日志级别 |
 
-## 免责声明
+启动进程中已有的同名环境变量优先于 `.env`。在面板内修改过密码后，已保存的密码优先于 `ADMIN_PASSWORD`。将密码、扫码令牌和账号授权信息保留在本机，提交代码时使用 [配置模板](.env.example) 中的占位值。
 
-本项目仅供学习与研究用途。使用本工具可能违反游戏服务条款，由此产生的一切后果由使用者自行承担。
+### 数据保存与备份
+
+| 运行方式 | 数据目录 |
+| --- | --- |
+| 源码运行，包括 `start.cmd` | `core/data/` |
+| Docker Compose | 宿主机 `./data/`，挂载至容器 `/app/core/data/` |
+| 二进制 | 可执行文件同级的 `data/` |
+
+`accounts.json` 保存账号信息，`store.json` 保存面板与自动化配置。升级或迁移前，先停止服务并备份整个数据目录。恢复时把目录放回对应位置，再启动服务。
+
+## 常见问题
+
+| 现象 | 排查方法 |
+| --- | --- |
+| 启动时报 `EADDRINUSE` | 检查端口 `3000` 是否已被另一个实例或程序占用。Windows 可用 `Get-NetTCPConnection -LocalPort 3000 -State Listen` 检查。可以关闭占用端口的程序，或设置 `ADMIN_PORT` 后用新端口访问 |
+| 首页提示 `web build not found` | 在仓库根目录运行 `pnpm build:web`，确认生成 `web/dist/index.html` 后重启后端 |
+| 修改 `ADMIN_PASSWORD` 后仍需旧密码 | 面板内设置过的密码优先。用当前有效密码登录，再从「设置」修改密码 |
+| 提示扫码需要启用面板密码认证 | 在「设置」重新启用密码认证，退出后用面板密码登录 |
+| 提示本机微信扫码服务不可用 | 检查扫码服务是否运行、地址是否为面板进程可访问的回环地址、端口是否正确、两端令牌是否一致。修改环境变量后重启面板 |
+| 游戏服务器提示客户端版本过低 | 打开「设置 → 运行时连接配置」，更新「游戏版本号」并保存。运行中的账号会根据新配置重连 |
+
+## 本地开发
+
+在仓库根目录执行以下命令。
+
+| 命令 | 作用 |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | 根据锁文件安装工作区依赖 |
+| `pnpm dev` | 构建前端并启动后端，默认访问 `http://localhost:3000` |
+| `pnpm dev:core` | 单独启动后端 |
+| `pnpm dev:web` | 启动支持热更新的 Vite 前端，访问终端显示的地址 |
+| `pnpm build:web` | 检查前端类型并构建到 `web/dist/` |
+| `pnpm lint` | 运行前后端 ESLint 并自动修复可修复项，执行后可用 `git diff` 检查改动 |
+
+前后端联调时，分别在两个终端运行 `pnpm dev:core` 和 `pnpm dev:web`。Vite 默认将 API、Socket.IO 和游戏静态资源请求代理至本机 `3000` 端口。调整后端开发端口时，应同步调整 [Vite 代理配置](web/vite.config.ts)。
+
+### 项目结构
+
+```text
+QQ_Farm/
+├── core/
+│   ├── client.js          # 管理面板和账号运行时入口
+│   └── src/
+│       ├── controllers/ # Express API 和 Socket.IO
+│       ├── runtime/     # 账号进程管理
+│       ├── services/    # 农场、好友、任务与扫码业务
+│       ├── models/      # 账号与配置持久化
+│       ├── proto/       # Protobuf 协议定义
+│       └── gameConfig/  # 游戏静态数据
+├── web/
+│   ├── public/           # 前端静态资源
+│   └── src/              # Vue 页面、组件、Pinia 和 API 客户端
+├── docker-compose.yml    # Compose 部署配置
+├── .env.example          # 本机环境变量模板
+└── start.cmd             # Windows 启动器
+```
+
+后端使用 Node.js、Express、Socket.IO 和 Protobuf。前端使用 Vue 3、TypeScript、Vite、Pinia 和 UnoCSS。提交与验证约定见 [AGENTS.md](AGENTS.md)。
+
+## 来源与许可证
+
+- 上游 Web 面板项目 [Penty-d/qq-farm-bot-ui](https://github.com/Penty-d/qq-farm-bot-ui)
+- 核心功能来源 [linguo2625469/qq-farm-bot](https://github.com/linguo2625469/qq-farm-bot)
+- 部分功能来源 [QianChenJun/qq-farm-bot](https://github.com/QianChenJun/qq-farm-bot)
+
+本仓库按 [MIT 许可证](LICENSE) 发布。项目仅供学习与研究，请遵守游戏服务条款。使用本工具可能引发账号限制，相关后果由使用者自行承担。
